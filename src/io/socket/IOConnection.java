@@ -21,7 +21,6 @@ import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,8 +31,6 @@ import org.json.JSONObject;
  * The Class IOConnection.
  */
 class IOConnection {
-	/** Debug logger */
-	static final Logger logger = Logger.getLogger("io.socket");
 
 	/** The Constant STATE_INIT. */
 	private static final int STATE_INIT = 0;
@@ -378,7 +375,7 @@ class IOConnection {
 			transport.disconnect();
 		sockets.clear();
 		connections.remove(urlStr);
-		logger.info("Cleanup");
+		System.out.println("Cleanup");
 		backgroundTimer.cancel();
 	}
 
@@ -409,10 +406,10 @@ class IOConnection {
 		synchronized (outputBuffer) {
 			if (getState() == STATE_READY)
 				try {
-					logger.info("> " + text);
+					System.out.println("> " + text);
 					transport.send(text);
 				} catch (Exception e) {
-					logger.info("IOEx: saving");
+					System.out.println("IOEx: saving");
 					outputBuffer.add(text);
 				}
 			else {
@@ -461,11 +458,11 @@ class IOConnection {
 					// DEBUG
 					String[] texts = outputBuffer
 							.toArray(new String[outputBuffer.size()]);
-					logger.info("Bulk start:");
+					System.out.println("Bulk start:");
 					for (String text : texts) {
-						logger.info("> " + text);
+						System.out.println("> " + text);
 					}
-					logger.info("Bulk end");
+					System.out.println("Bulk end");
 					// DEBUG END
 					transport.sendBulk(texts);
 				} catch (IOException e) {
@@ -511,7 +508,7 @@ class IOConnection {
 	 *            been received.
 	 */
 	public void transportMessage(String text) {
-		logger.info("< " + text);
+		System.out.println("< " + text);
 		IOMessage message;
 		try {
 			message = new IOMessage(text);
@@ -715,7 +712,7 @@ class IOConnection {
 	/** A dummy callback used when IOConnection receives a unexpected message. */
 	final static public IOCallback DUMMY_CALLBACK = new IOCallback() {
 		private void out(String msg) {
-			logger.info("DUMMY CALLBACK: " + msg);
+			System.out.println("DUMMY CALLBACK: " + msg);
 		}
 
 		@Override
