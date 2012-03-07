@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -87,6 +89,9 @@ class IOConnection {
 
 	/** The sockets of this connection. */
 	private HashMap<String, SocketIO> sockets = new HashMap<String, SocketIO>();
+
+	/** Custom Request headers used while handshaking */
+	private Properties headers;
 
 	/**
 	 * The first socket to be connected. the socket.io server does not send a
@@ -170,7 +175,7 @@ class IOConnection {
 	 */
 	private class ConnectThread extends Thread {
 		/**
-		 * Instantiates a new background thread.
+		 * Instantiates a new thread for handshaking/connecting.
 		 */
 		public ConnectThread() {
 			super("ConnectThread");
@@ -201,6 +206,12 @@ class IOConnection {
 				connection = url.openConnection();
 				connection.setConnectTimeout(connectTimeout);
 				connection.setReadTimeout(connectTimeout);
+
+				/* Setting the request headers */
+				for (Entry<Object, Object> entry : headers.entrySet()) {
+					connection.setRequestProperty((String) entry.getKey(),
+							(String) entry.getValue());
+				}
 
 				InputStream stream = connection.getInputStream();
 				Scanner in = new Scanner(stream);
@@ -331,6 +342,7 @@ class IOConnection {
 			throw new RuntimeException(e);
 		}
 		firstSocket = socket;
+		headers = socket.getHeaders();
 		sockets.put(socket.getNamespace(), socket);
 		new ConnectThread().start();
 	}
@@ -360,13 +372,12 @@ class IOConnection {
 		String namespace = socket.getNamespace();
 		if (sockets.containsKey(namespace))
 			return false;
-		else {
-			sockets.put(namespace, socket);
-			IOMessage connect = new IOMessage(IOMessage.TYPE_CONNECT,
-					socket.getNamespace(), "");
-			sendPlain(connect.toString());
-			return true;
-		}
+		sockets.put(namespace, socket);
+		socket.setHeaders(headers);
+		IOMessage connect = new IOMessage(IOMessage.TYPE_CONNECT,
+				socket.getNamespace(), "");
+		sendPlain(connect.toString());
+		return true;
 	}
 
 	/**
