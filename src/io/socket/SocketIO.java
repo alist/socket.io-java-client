@@ -10,6 +10,7 @@ package io.socket;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Properties;
 
 import org.json.JSONObject;
 
@@ -26,6 +27,9 @@ public class SocketIO {
 
 	/** namespace. */
 	private String namespace;
+
+	/** Used for setting header during handshaking. */
+	private Properties headers = new Properties();
 
 	private URL url;
 
@@ -50,6 +54,29 @@ public class SocketIO {
 	public SocketIO(final String url) throws MalformedURLException {
 		if (url == null)
 			throw new RuntimeException("url may not be null.");
+		setAndConnect(new URL(url), null);
+	}
+
+	/**
+	 * Instantiates a new socket.io connection and sets the request headers used
+	 * while connecting the first time for authorizing. The object connects
+	 * after calling {@link #connect(IOCallback)}
+	 * 
+	 * @param url
+	 *            the url
+	 * @param headers
+	 *            the {@link Properties headers} used while handshaking
+	 * @throws MalformedURLException
+	 *             the malformed url exception
+	 */
+	public SocketIO(final String url, Properties headers)
+			throws MalformedURLException {
+		if (url == null)
+			throw new RuntimeException("url may not be null.");
+
+		if (headers != null)
+			this.headers = headers;
+
 		setAndConnect(new URL(url), null);
 	}
 
@@ -311,5 +338,53 @@ public class SocketIO {
 	public String getTransport() {
 		IOTransport transport = this.connection.getTransport();
 		return transport != null ? transport.getName() : null;
+	}
+
+	/**
+	 * Returns the headers used while handshaking. These Properties are not
+	 * necessarily the ones set by {@link #addHeader(String, String)} or
+	 * {@link #SocketIO(String, Properties)} but the ones used for the
+	 * handshake.
+	 * 
+	 * @return the headers used while handshaking
+	 */
+	public Properties getHeaders() {
+		return headers;
+	}
+
+	/**
+	 * Sets the headers used while handshaking. Internally used. Use
+	 * {@link #SocketIO(String, Properties)} or
+	 * {@link #addHeader(String, String)} instead.
+	 * 
+	 * @param headers
+	 *            the headers used while handshaking
+	 */
+	SocketIO setHeaders(Properties headers) {
+		this.headers = headers;
+		return this;
+	}
+
+	/**
+	 * Adds an header to the {@link #headers}
+	 */
+	public void addHeader(String key, String value) {
+		if (this.connection != null)
+			throw new RuntimeException(
+					"You may only set headers before connecting.\n"
+							+ " Try to use new SocketIO().addHeader(key, value).connect(host, callback) "
+							+ "instead of SocketIO(host, callback).addHeader(key, value)");
+		this.headers.setProperty(key, value);
+	}
+
+	/**
+	 * Returns the header value
+	 * 
+	 * @return the header value or {@code null} if not present
+	 */
+	public String getHeader(String key) {
+		if (this.headers.contains(key))
+			return this.headers.getProperty(key);
+		return null;
 	}
 }
